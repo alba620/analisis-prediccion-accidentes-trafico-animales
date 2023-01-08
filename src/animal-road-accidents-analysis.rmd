@@ -1,0 +1,1303 @@
+---
+title: <center> Limpieza y análisis de datos de accidentes de tráfico con animales
+  involucrados </center>
+author: "Alba Gómez Varela"
+output:
+  html_document:
+    theme: flatly
+    highlight: tango
+    number_sections: yes
+    toc: yes
+    toc_float:
+      collapsed: yes
+    df_print: paged
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: yes
+encoding: UTF-8
+csl: iso690-author-date-fr.csl
+nocite: '@*'
+lang: es
+---
+```{css, echo=FALSE}
+h4 {
+  text-align: center;
+}
+
+.table caption {
+    color: dimgray;
+    font-weight: bold;
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, message = FALSE, warning = FALSE,
+                      fig.align = 'center', fig.height = 4, fig.width = 9, dpi = 256)
+options(scipen=99999, digits=2)
+knitr::knit_hooks$set(inline = function(x) {
+  if(!is.numeric(x)){x}
+  else{prettyNum(round(x,2), big.mark='.', decimal.mark=',')}
+  })
+
+# carga de librerias
+if (!require('tidyverse')) install.packages('tidyverse'); library('tidyverse')
+if (!require('tidyr')) install.packages('tidyr'); library('tidyr')
+if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
+if (!require('caret')) install.packages('caret'); library('caret')
+if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+if (!require('plotly')) install.packages('plotly'); library('plotly')
+if (!require('GGally')) install.packages('GGally'); library('GGally')
+if (!require('scales')) install.packages('scales'); library('scales')
+if (!require('RColorBrewer')) install.packages('RColorBrewer'); library('RColorBrewer')
+if (!require('ggpubr')) install.packages('ggpubr'); library('ggpubr')
+if (!require('kableExtra')) install.packages('kableExtra'); library('kableExtra')
+if (!require('nortest')) install.packages('nortest'); library('nortest')
+if (!require('car')) install.packages('car'); library('car')
+if (!require('RPostgreSQL')) install.packages('RPostgreSQL'); library('RPostgreSQL')
+if (!require('DBI')) install.packages('DBI'); library('DBI')
+if (!require('sf')) install.packages('sf'); library('sf')
+if (!require('chron')) install.packages('chron'); library('chron')
+if (!require('png')) install.packages('png'); library('png')
+if (!require('grid')) install.packages('grid'); library('grid')
+if (!require('gridExtra')) install.packages('gridExtra'); library('gridExtra')
+if (!require('reactable')) install.packages('reactable'); library('reactable')
+if (!require('TSstudio')) install.packages('TSstudio'); library('TSstudio')
+if (!require('xts')) install.packages('xts'); library('xts')
+if (!require('seasonal')) install.packages('seasonal'); library('seasonal')
+if (!require('seas')) install.packages('seas'); library('seas')
+if (!require('forecast')) install.packages('forecast'); library('forecast')
+if (!require('urca')) install.packages('urca'); library('urca')
+
+# definicion de colores
+default.color.main <- '#F8766D'
+default.color.secondary <- '#00BFC4'
+default.color.terciary <- '#7CAE00'
+default.color.quat <- '#6C25BE'
+default.color.cinq <- '#FFB800'
+default.color.six <- '#1C1D21'
+default.color.seven <- '#003049'
+default.color.eight <- '#8A2E3A'
+default.color.nine <- '#093824'
+
+# beautify plots
+ggally.dist.aes <- list(continuous=wrap('points', shape=21))
+palette <- c(default.color.main, default.color.secondary, 
+             default.color.terciary, default.color.quat,
+             default.color.cinq, default.color.six,
+             default.color.seven, default.color.eight, default.color.nine)
+palette.binary <- c(default.color.main, default.color.secondary)
+title.centered <- theme(
+  plot.title=element_text(face='bold', hjust=0.5, vjust=0.5, size=16),
+  plot.title.position='plot',
+  axis.title.x=element_text(size=12),
+  axis.title.y=element_text(size=12),
+  plot.subtitle=element_text(face='plain', hjust=0.5, vjust=0.5, size=11,
+                             colour='grey50')
+  )
+no.axis.y <- theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
+no.axis.x <- theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+```
+
+# Introducción y contexto
+
+Este análisis forma parte de la fase de limpieza, preprocesado y análisis de datos del *Trabajo Final de Máster* **'Análisis predictivo de accidentes de tráfico con animales involucrados en vías interurbanas de España'**, realizado por **Alba Gómez Varela** y dirigido por **Sergio Trilles Oliver** en el marco del **Máster Universitario de Ciencia de Datos (Data Science)** de la Universitat Oberta de Catalunya (UOC). 
+
+Los datos que se tratan y analizan en el presente documento proceden de un proceso de optimización de los registros de **todos los accidentes de tráfico en España en los que ha habido animales involucrados entre 2016 y 2021**, cuya fuente es la Dirección General de Tráfico (DGT). Para ello, se ha realizado un complejo proceso de búsqueda de nuevas fuentes de datos, conversión e integración que se puede consultar en este repositorio de GitHub.
+
+# Carga y transformación de los datos
+
+En primer lugar, se procede a **realizar la conexión** con la base de datos `tfm`, que es con la que se trabaja durante todo el proyecto:
+
+```{r, include=FALSE}
+# Contraseña de la base de datos
+pw <- { "master"}
+```
+
+
+```{r}
+# Se lee el driver de PostgreSQL
+drv <- dbDriver("PostgreSQL")
+
+# Se crea la conexion con la base de datos
+con <- dbConnect(drv, dbname = "tfm",
+                 host = "localhost", port = 5432,
+                 user = "postgres", password = pw)
+
+# Se elimina la contraseña
+rm(pw) 
+```
+
+Con la conexión ya realizada, se procede a **cargar los datos** que están almacenados en la base de datos `tfm` y se lee la tabla `accidentes_animales_final`, que es la que contiene los registros de accidentes de tráfico con animales ya optimizados tras la decodificación e integración de nuevas fuentes de datos:
+
+```{r}
+accidentes.raw <- DBI::dbReadTable(con, "accidentes_animales_final")
+accidentes.raw.dim <- dim(accidentes.raw)
+```
+
+Se han cargado **`r accidentes.raw.dim[1]` registros** con **`r accidentes.raw.dim[2]` campos** asociados a cada uno. Así, se muestran **5 registros aleatorios** para comprobar la estructura del conjunto de datos, puesto que si se seleccionan los del principio (*head*) o final (*tail*) todos serán del mismo año:
+
+```{r}
+accidentes.raw[sample(nrow(accidentes.raw), 5), ]
+```
+
+Además, se examina el **tipo de datos** de cada variable:
+
+```{r}
+Form.Basic = c("striped", "hover", "condensed", "responsive")
+kbl(cbind(sapply(accidentes.raw, class)),
+    caption="Tipo de datos de cada variable") %>%
+  kable_styling(bootstrap_options = Form.Basic) %>%
+  scroll_box(width = "100%", 
+             height = "400px")
+```
+Para facilitar el análisis, se **modifica el tipo de datos** de las variables en función de su contenido, puesto que se conoce porque ya que se ha trabajado cada una de ellas en la fase de captura, obtención y gestión de los datos:
+
+```{r}
+accidentes <- accidentes.raw %>%
+  dplyr::mutate(ind_accda = as.factor(ind_accda),
+                nombre_ind_accd = as.factor(nombre_ind_accd),
+                ind_acciv = as.factor(ind_acciv),
+                nombre_ind_acciv = as.factor(nombre_ind_acciv),
+                mes_1f = as.factor(mes_1f),
+                nombre_mes = as.factor(nombre_mes),
+                anyo = as.factor(anyo),
+                ccaa_1f = as.factor(ccaa_1f),
+                nombre_ccaa = as.factor(nombre_ccaa),
+                provincia_1f = as.factor(provincia_1f),
+                nombre_provincia = as.factor(nombre_provincia),
+                cod_municipio	 = as.factor(cod_municipio	),
+                nombre_municipio = as.factor(nombre_municipio),
+                sentido_1f = as.factor(sentido_1f),
+                nombre_sentido = as.factor(nombre_sentido),
+                tipo_via_3f = as.factor(tipo_via_3f),
+                nombre_tipo_via = as.factor(nombre_tipo_via),
+                titularidad_via_2f = as.factor(titularidad_via_2f),
+                nombre_titularidad_via = as.factor(nombre_titularidad_via),
+                tipo_animal_1f = as.factor(tipo_animal_1f),
+                nombre_tipo_animal_1f = as.factor(nombre_tipo_animal_1f),
+                tipo_animal_2f = as.factor(tipo_animal_2f),
+                nombre_tipo_animal_2f = as.factor(nombre_tipo_animal_2f),
+                dia_semana = as.factor(dia_semana),
+                nombre_dia_semana = as.factor(nombre_dia_semana),
+                parte_dia = as.factor(parte_dia),
+                uso_suelo = as.factor(uso_suelo),
+                taxonkey = as.factor(taxonkey),
+                tipo_dia = as.factor(tipo_dia),
+                maxspeed = as.factor(maxspeed))
+accidentes[sample(nrow(accidentes), 5), ]
+```
+Se examinan los **datos resumen** de cada variable del dataset:
+
+```{r}
+options(knitr.kable.NA = '')
+kable(summary(accidentes),
+      digits=2, 
+      align='l', 
+      caption="Datos resumen de cada tipo de variable") %>%
+  kable_styling(bootstrap_options = Form.Basic) %>%
+    scroll_box(width = "100%", height = "470px")
+```
+# Limpieza de datos
+
+## Registros duplicados
+
+En primer lugar, se verifica que no existen **registros duplicados**:
+
+```{r}
+accidentes[duplicated(accidentes$id_num),]
+```
+Se comprueba que, efectivamente, todos los `id_num` son diferentes:
+
+```{r}
+length(unique(accidentes$id_num)) == dim(accidentes)[1]
+```
+
+## Valores nulos
+
+Durante la fase de integración de datos se importaron nulos señalizados como en las fuentes originales de otro modo. Es el caso de la `altitud` y de la `pendiente`, como se observa a continuación:
+
+```{r}
+min(accidentes$altitud, na.rm = TRUE)
+min(accidentes$pendiente, na.rm = TRUE)
+```
+Por tanto, se imputan esos valores como NA y se verifica que han desaparecido esos valores extremos:
+
+```{r}
+# Se imputan los nulos
+accidentes["altitud"][accidentes["altitud"] == -999] <- NA
+accidentes["pendiente"][accidentes["pendiente"] == -9999] <- NA
+
+# Se verifica la imputación
+min(accidentes$altitud, na.rm = TRUE)
+min(accidentes$pendiente, na.rm = TRUE)
+```
+
+
+Se comprueba cuántos valores ausentes hay en cada variable:
+
+```{r}
+kable(colSums(is.na(accidentes)),
+      digits=2, 
+      align='l', 
+      caption="Valores nulos en cada variable") %>%
+  kable_styling(bootstrap_options = Form.Basic) %>%
+    scroll_box(width = "100%", height = "470px")
+```
+
+
+
+Como sí que hay más columnas con valores ausentes, se estudia la proporción con el objetivo de tomar decisiones en cada caso:
+
+```{r}
+colMeans(is.na(accidentes))
+```
+
+Los únicos registros que no se pueden emplear para el desarrollo del modelo de predicción son aquellos que no contienen la información de `longitud`, `latitud` y `geom`, puesto que se trata de la **información espacial esencial**. Como se trata solo del 5% del conjunto de datos, se decide **eliminarlos** porque esta acción no distorsiona el análisis y permite optimizar los procesos en futuras fases:
+
+```{r}
+accidentes <- accidentes %>% drop_na(geom)
+```
+
+Como muchos campos dependían para su cálculo de la ubicación del accidente, es probable que la proporción de nulos haya bajado en el conjunto de datos completo, por lo que se vuelve a comprobar: 
+
+```{r}
+colMeans(is.na(accidentes))
+```
+Efecitvamente, la cantidad de nulos ha bajado, y se toma la decisión de **mantener el resto de registros** por:
+
+- **`nombre_municipio`**: a pesar del 69% de nulos se trata de una información espacial genérica si se compara con la `longitud`y `latitud` o el `geom`, por lo que no afecta porque realmente no se empleará.
+- **`nombre_titularidad_via`** y **`cod_municipio`**: 0.00064% es una proporción despreciable. 
+- **`prec`**, **`tmin`**, **`tmed`**, **`tmax`** y **`sol`**: son datos meteorológicos que podrían llegar a ayudar en el análisis y predicción, pero su ausencia no compromete el proyecto además de tratarse solo de un 3.59% de los registros.
+- **`luna`**: el campo es nulo cuando no se calcula su valor porque el accidente no ha ocurrido por la noche, por lo que incluso ser nulo aporta información relevante.
+- **`pendiente`** y **`altitud`**: es información proporcionada por el Centro Nacional de Información Geográfica (CNIG) y el valor es nulo simplemente porque no se ha documentado dicha información para esa localización. Su ausencia tampoco compromete la viabilidad del proyecto.   
+
+## Valores extremos
+
+A continuación, se analizan los posibles valores extremos o *outliers* que pueden tomar las variables cuantitativas, adoptando la estrategia que mejor se adapta a cada una de ellas. En este sentido, cabe destacar que **todo apunta a que no habrá valores extremos** según los datos que ha arrojado el análisis de los datos resumen de cada tipo de variable realizado en la introducción. 
+
+Los atributos **`total_mu30df`**, **`total_hg30df`** y **`total_hl30df`** son totalizadores que indican el número de fallecidos, heridos hospitalizados y no hospitalizados, respectivamente, en un cómputo de 30 días para cada uno de los accidentes. Por ello, se evalúa que el valor no sea menor que 0 porque no sería posible y se estudia el máximo para valorar si se trata de un error o no. El mismo proceso de comprobación se hace con las variables **`altitud`**, **`pendiente`** y **`imd_total`** debido a que se desconoce su dominio exacto, pero por el conocimiento del campo sí que se puede evaluar si el rango es plausible:
+
+
+```{r}
+var_cuant <- c('total_mu30df',
+               'total_hg30df',
+               'total_hl30df', 
+               'altitud', 
+               'pendiente', 
+               'imd_total')
+min.cuant <- as.vector(sapply(accidentes[, var_cuant], min,na.rm = TRUE))
+max.cuant <- as.vector(sapply(accidentes[, var_cuant], max,na.rm = TRUE))
+
+kable(data.frame(Variables= names(accidentes[, var_cuant]),
+                 min = min.cuant,
+                 max = max.cuant),
+      digits=2, caption="Mínimo y máximo") %>%
+  kable_styling(bootstrap_options = Form.Basic)
+```
+
+A la vista de los resultados en los totalizadores, no se puede considerar que haya **ningún *outlier*** que deba ser tratado puesto que el valor más alto es el de heridos no hospitalizados, que en, al menos, un accidente asciende a 21. Debido a que la altitud máxima de España es de 3.715 metros y que también hay zonas ligeramente por debajo del nivel del mar, la latitud también se puede considerar dentro de valores normales. Las variables `pendiente` e `imd_total`, asimismo, se encuentran dentro de rangos esperables. 
+
+En cuanto a las **temperaturas** registradas el día del accidente, se decide comparar los *boxplots* interactivos de **`tmin`**, **`tmed`** y **`tmax`**, de manera que se puede consultar directamente el valor de los valores extremos: 
+
+
+```{r, out.width="100%",out.height ="50%"}
+fig <- plot_ly(y = accidentes$tmin, type = "box", name="Temperatura mínima")
+fig <- fig %>% add_trace(y = accidentes$tmed, name="Temperatura media")
+fig <- fig %>% add_trace(y = accidentes$tmax, name="Temperatura máxima")
+fig <- fig %>% layout(title = "Datos de temperaturas", yaxis = list(title = 'Grados celsius'))
+fig
+```
+
+Como el alcance del proyecto es el territorio español, estos datos coinciden con las temperaturas registradas en España en los últimos años, a pesar de que las cálidas parezcan muy altas, puesto que han sido los años más extremos de la serie histórica. Del mismo modo, las temperaturas mínimas se acercan a los récords registrados desde 2016, por lo que no hay motivos para sospechar que se trate de datos erróneos.
+
+Por su parte, los valores de **`prec`** y **`sol`** se analizan en dos diagramas de caja diferentes puesto que no comparten medida, aunque también son interactivos para consultar el valor de los *outliers*:
+
+```{r, out.width="100%",out.height ="50%"}
+fig1 <- plot_ly(y = accidentes$prec, type = "box", name="Lluvia diaria (mm)")
+fig2 <- plot_ly(y = accidentes$sol, type = "box", name="Horas de sol al día")
+fig <- subplot(fig1, fig2) %>% 
+  layout(title = 'Meteorología diaria')
+fig
+```
+
+Al igual que ocurre con la temperatura, los valores mínimos de sol y lluvia son 0, por lo que no hay errores en ese sentido, y los máximos de lluvia pueden encontrar explicación en las precipitaciones torrenciales que se han dado en varios momentos en los últimos años. 
+
+La carretera N-340 es la más larga de España y tiene una extensión de 1248 kilómetros, por lo que se comprueba si el atributo **`km`** cumple la condición de que no haya ningún kilómetro con un valor mayor que este ni menor que 0, puesto que la normativa marca que deben ser positivos. 
+
+```{r}
+if (all(between(accidentes$km, 0, 1248), na.rm = TRUE) == TRUE){
+  print("Todos los valores no nulos de km están dentro del dominio [0, 1248]")}
+```
+
+En cuanto a la variable **`luna`**, ese campo recoge la superficie de la luna iluminada, siendo 0 luna nueva y 100 luna llena, por lo que se verifica que no haya ningún valor fuera de este rango:
+
+```{r}
+if (all(between(accidentes$luna, 0, 100), na.rm = TRUE) == TRUE){
+  print("Todos los valores no nulos de luna tienen el dominio [0, 100]")}
+```
+
+Del mismo modo, se comprueba que todos los registros estén dentro de la **`longitud`** y **`latitud`** de España:
+
+```{r}
+latitud_range <- all(between(accidentes$latitud,27.5,43.78333333333333), na.rm = TRUE)
+longitud_range <- all(between(accidentes$longitud,-18.15, 4.316666666666666), na.rm = TRUE)
+if (latitud_range == TRUE & longitud_range == TRUE){
+  print("Todos los valores de longitud y latitud están dentro de España")}
+```
+Por tanto, se puede considerar que **no existen valores extremos** que deban ser tratados.
+
+## Datos cualitativos
+
+Para verificar los datos, se adoptan **dos estrategias diferentes**. Por un lado, en aquellas variables que puedan tomar muchos valores y se conozca cuántos, se opta por comprobar el total, puesto que mirar todos los nombres puede llevar a confusión y a pasar errores por alto. Por el otro, aquellas variables con menos opciones de clasificación, se muestran y comprueban que los niveles son correctos. En cualquier caso, **no se prevén** fallos puesto que en cada fase de obtención e integración de los datos se ha realizado un **control exhaustivo** de los mismos. 
+
+En primer lugar, se trabaja con las variables con más niveles:
+
+```{r}
+var_cual <- c('mes_1f',
+              'nombre_mes',
+              'ccaa_1f',
+              'nombre_ccaa',
+              'provincia_1f',
+              'nombre_provincia',
+              'cod_municipio',
+              'nombre_municipio',
+              'dia_semana',
+              'nombre_dia_semana')
+num.levels <- as.vector(sapply(accidentes[, var_cual], levels))
+
+kable(data.frame(Variables= names(accidentes[, var_cual]),
+                 total_levels = lengths(num.levels)),
+      digits=1, caption="Total de niveles de cada variable") %>%
+  kable_styling(bootstrap_options = Form.Basic)
+```
+Todos **los datos están correctos**, porque hay menos comunidades autónomas, provincias y municipios en total ya que, o bien no se han registrado accidentes con animales en ellos (en alguna localidad) o no hay datos para esa región (como Cataluña).
+
+En cuanto a las **variables con menos niveles** o que **no se conoce de antemano** el total que debe dar como correcto pero sí que se conoce la clasificación que debe dar como resultado, se muestran tanto las codificadas como las decodificadas y se verifica que todo sea correcto:
+
+```{r}
+levels(accidentes$ind_accda)
+levels(accidentes$nombre_ind_accd)
+levels(accidentes$ind_acciv)
+levels(accidentes$nombre_ind_acciv)
+levels(accidentes$anyo)
+levels(accidentes$sentido_1f)
+levels(accidentes$nombre_sentido)
+levels(accidentes$tipo_via_3f)
+levels(accidentes$nombre_tipo_via)
+levels(accidentes$titularidad_via_2f)
+levels(accidentes$nombre_titularidad_via)
+levels(accidentes$tipo_animal_1f)
+levels(accidentes$nombre_tipo_animal_1f)
+levels(accidentes$taxonkey)
+levels(accidentes$tipo_animal_2f)
+levels(accidentes$nombre_tipo_animal_2f)
+levels(accidentes$parte_dia)
+levels(accidentes$tipo_dia)
+levels(accidentes$uso_suelo)
+levels(accidentes$maxspeed)
+```
+Se detecta un fallo en la variable `taxonkey` producto posiblemente de la inclusión de un retorno al crear la tabla auxiliar `aux_tipo_animal_1f`que se encuentra en la base de datos `tfm`y permitió decodificar esta variable. Por ello, se sustituye por el valor adecuado y se verifica que se haya producido el cambio:
+
+```{r}
+levels(accidentes$taxonkey) <- sub("^2440886\r\n$", "2440886", levels(accidentes$taxonkey))
+levels(accidentes$taxonkey)
+```
+
+Por último, en España no existe posibilidad de que la velocidad máxima en ninguna vía sea de 48 kilómetros por hora, por lo que se ajusta ese nivel y se homogeniza en 50 en la variable `maxspeed`:
+
+```{r}
+levels(accidentes$maxspeed) <- sub("^48$", "50", levels(accidentes$maxspeed))
+levels(accidentes$maxspeed)
+```
+
+
+# Análisis de los datos
+
+Tras acabar la fase de procesado de los datos y con todos ellos en los formatos correctos, en este apartado se realiza un análisis del conjunto de datos final, con el que se trabajarán los modelos. 
+
+## Normalidad
+
+Debido a que todas las variables contienen muchas más de 30 observaciones, se considera que su tamaño es lo suficientemente grande como para **asumir normalidad** aplicando el teorema del límite central (TLC).
+
+Sin embargo, con el objetivo de afinar todos los cálculos al máximo, se decide evaluar cada una de las variables numéricas, descartando la `longitud`y `latitud`:
+
+```{r}
+var_cuant <- list(accidentes$total_mu30df,
+               accidentes$total_hg30df,
+               accidentes$total_hl30df, 
+               accidentes$altitud, 
+               accidentes$pendiente, 
+               accidentes$tmin,
+               accidentes$tmed,
+               accidentes$tmax,
+               accidentes$prec,
+               accidentes$sol,
+               accidentes$luna,
+               accidentes$imd_total)
+```
+
+
+```{r}
+var_cuant_names <- c( substitute(total_mu30df), 
+                       substitute(total_hg30df),
+                       substitute(total_hl30df), 
+                       substitute(altitud),
+                       substitute(pendiente), 
+                       substitute(tmin), 
+                       substitute(tmed),
+                       substitute(tmax),
+                       substitute(prec), 
+                       substitute(sol),
+                       substitute(luna), 
+                       substitute(maxspeed),
+                       substitute(imd_total))
+```
+
+
+```{r}
+line2user <- function(line, side) {
+  lh <- par('cin')[2] * par('cex') * par('lheight')
+  x_off <- diff(grconvertX(0:1, 'inches', 'user'))
+  y_off <- diff(grconvertY(0:1, 'inches', 'user'))
+  switch(side,
+         `1` = par('usr')[3] - line * y_off * lh,
+         `2` = par('usr')[1] - line * x_off * lh,
+         `3` = par('usr')[4] + line * y_off * lh,
+         `4` = par('usr')[2] + line * x_off * lh,
+         stop("side must be 1, 2, 3, or 4", call.=FALSE))
+}
+
+```
+
+
+```{r}
+par(mfrow=c(1,2))
+i <- 1
+for (var in var_cuant){
+plot(density(na.omit(var)),
+     main= "Densidad",
+     col = "#69b3a2",
+     lwd = 2)
+qqnorm(var,
+       main = "Normal Q-Q plot", 
+       col = "azure4",
+       xlab="Cuantiles teóricos", 
+       ylab="Cuantiles de la muestra")
+qqline(var,
+       col = "red", 
+       lwd = 1)
+#mtext(var_cuant_names[[i]], side = 3, line = 21, outer = TRUE)
+#text(0.1, 0.1, var_cuant_names[[i]],cex=2,font=2)
+text(line2user(line=mean(par('mar')[c(2, 4)]), side=2), 
+     line2user(line=2, side=3), var_cuant_names[[i]], xpd=NA, cex=1.7, font=2)
+i <- i + 1}
+```
+
+
+A la luz de estos gráficos, parece que **ninguna variable tiene una distribución normal**, aunque existen dudas sobre algunas de ellas. Por ello, se realiza el **contraste de normalidad de Lilliefors**, para lo que se plantean primero la hipótesis nula y la hipótesis alternativa:
+
+- $H_0$: Variable $=$ distribución normal 
+
+- $H_1$: Variable $\neq$ distribución normal 
+
+```{r}
+i <- 1
+vec_names = c()
+vec_values = c()
+for (var in var_cuant){
+  vec_names <- append(vec_names, var_cuant_names[i])
+  vec_values <- append(vec_values, format(lillie.test(var)$p.value, scientific=TRUE))
+  #cat(paste0(var_cuant_names[[i]]),":",(format(lillie.test(var)$p.value, scientific=TRUE)),"\n")
+  i <- i+1
+}
+
+vec_names <- unlist(vec_names)
+vec_names <- as.vector(vec_names,'character')
+
+kable(data.frame(vec_names, vec_values),
+      align='l', 
+      caption="P-value de cada variable en el test de Lilliefors") %>%
+  kable_styling(bootstrap_options = Form.Basic) %>%
+    scroll_box(width = "100%", height = "470px")
+```
+
+Debido a que el p-value es muy inferior $\alpha = 0.05$ en todos los casos, se rechaza la hipótesis nula y se concluye que **ninguna variable procede de una distribución normal**. El resultado de este test coincide con la conclusión de la inspección visual.
+
+## Correlación
+
+Como, de momento, no se están comparando muestras, no se realiza ningún test de **homocedasticidad**, por lo que se pasa directamente al análisis de la correlación entre las diferentes variables numéricas. 
+
+Se utiliza el coeficiente de correlación de **Spearman**, dado que se trata de un **test no paramétrico** y es más adecuado para los datos a analizar debido a que no siguen una distribución normal. Sin embargo, también se van a realizar las pruebas con el coeficiente de correlación de **Pearson**, ya que se puede aplicar el **teorema del límite central (TLC)** sobre la muestra al tener un tamaño suficientemente grande.
+
+
+Se crea un dataframe únicamente con las variables cuantitativas a analizar y se muestra el correlograma de los cálculos, siempre teniendo en cuenta que **correlación no tiene por qué implicar causalidad**:
+
+```{r}
+corr_cuant <- accidentes %>% dplyr::select(total_mu30df, 
+                                           total_hg30df, 
+                                           total_hl30df, 
+                                           altitud, 
+                                           pendiente, 
+                                           imd_total, 
+                                           tmin, 
+                                           tmed,
+                                           tmax,
+                                           prec,
+                                           sol,
+                                           luna) %>%
+
+  dplyr::rename(mu30df=total_mu30df,
+                hg30df=total_hg30df,
+                hl30df=total_hl30df,
+                imd = imd_total)
+```
+
+
+```{r, out.width="200%",out.height ="200%"}
+#fig.height = 3, fig.width = 3
+# low = "steelblue", mid = "white", high = "darkred"
+spearman <- ggcorr(corr_cuant, 
+                   method=c('complete.obs', 'spearman'), 
+                   name='Corr. coef.',
+                   label=TRUE, 
+                   label_alpha=TRUE, 
+                   legend.position='left',
+                   layout.exp = 1,
+                   hjust = 0.8,
+                   size = 4,
+                   limits = c(-1, 1)) +
+  title.centered + ggtitle('Matriz de correlaciones (Spearman)') +
+  theme(legend.title=element_text(face='bold', size=10))
+spearman
+```
+
+```{r, out.width="200%",out.height ="200%"}
+spearman <- ggcorr(corr_cuant, 
+                   method=c('complete.obs', 'pearson'), 
+                   name='Corr. coef.',
+                   label=TRUE, 
+                   label_alpha=TRUE, 
+                   legend.position='left',
+                   layout.exp = 1,
+                   hjust = 0.8,
+                   size = 4,
+                   limits = c(-1, 1)) +
+  title.centered + ggtitle('Matriz de correlaciones (Pearson)') +
+  theme(legend.title=element_text(face='bold', size=10))
+spearman
+```
+
+Las diferencias que se aprecian entre ambos correlogramas son insignificantes, por lo que se puede llegar a las mismas conclusiones. Las variables de temperatura **`tmin`, `tmed` y `tmax` altamente correlacionadas** de forma positiva, por lo que no podrán ser introducidas las tres en los modelos de forma simultánea. Este resultado era esperable, sobre todo el de `tmed` puesto que es resultado de una combinación lineal de las otras dos. Para verificar esta premisa, se comprueba mediante un test que dicha correlación sea significativa con un nivel de significancia de $\alpha = 0.05$: 
+
+```{r}
+# Test
+tmin.tmed.spearman <- cor.test(corr_cuant$tmin, corr_cuant$tmed, method='spearman')
+tmin.tmed.pearson <- cor.test(corr_cuant$tmin, corr_cuant$tmed, method='pearson')
+tmin.tmax.spearman <-cor.test(corr_cuant$tmin, corr_cuant$tmax, method='spearman')
+tmin.tmax.pearson <- cor.test(corr_cuant$tmin, corr_cuant$tmax, method='pearson')
+tmed.tmax.spearman <-cor.test(corr_cuant$tmed, corr_cuant$tmax, method='spearman')
+tmed.tmax.pearson <- cor.test(corr_cuant$tmed, corr_cuant$tmax, method='pearson')
+
+# Tabla de resultados
+results.table <- data.frame(Variables = c("tmin y tmed", 
+                                           "tmin y tmax", 
+                                           "tmed y tmax"), 
+                      Correlación.Pearson = c(tmin.tmed.pearson$estimate,
+                                         tmin.tmax.pearson$estimate,
+                                         tmed.tmax.pearson$estimate),
+                      Pvalue.Pearson = c(format(tmin.tmed.pearson$p.value, scientific = TRUE),
+                                         format(tmin.tmax.pearson$p.value,scientific = TRUE),
+                                         format(tmed.tmax.pearson$p.value,scientific = TRUE)),
+                      Correlación.Spearman = c(tmin.tmed.spearman$estimate,
+                                         tmin.tmax.spearman$estimate,
+                                         tmed.tmax.spearman$estimate),
+                      Pvalue.Spearman = c(format(tmin.tmed.spearman$p.value,scientific = TRUE),
+                                         format(tmin.tmax.spearman$p.value, scientific = TRUE),
+                                         format(tmed.tmax.spearman$p.value,scientific = TRUE)))
+results.table %>% 
+  kable() %>% 
+    kable_styling(bootstrap_options = Form.Basic) %>%
+  kableExtra::scroll_box(width = "100%")
+```
+
+De este modo, se verifica que la correlación entre las tres variables analizadas en profundidad es **estadísticamente significativa, positiva y alta**. 
+
+Otra conclusión sorprendente es que **no se encuentran correlaciones** fuertes entre variables que la intuición podría haber señalado erróneamente. Por ejemplo, entre la velocidad máxima (`maxspeed`) y el número de fallecidos o heridos.
+
+## Características generales
+
+Como una primera aproximación a las características de los accidentes, se estudia su frecuencia, para lo que la inspección visual sirve de apoyo. En primer lugar se realiza un **histograma** por cada una de las variables continuas:
+
+```{r}
+par(mfrow=c(3,2))
+
+tmin_freq <- ggplot(accidentes, aes(y = tmin)) + 
+  ggtitle("tmin") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_bar(fill = "darkorchid4", col="darkorchid1") +
+  xlab(" ") +
+  ylab("Grados celsius") +
+  coord_flip()
+
+tmed_freq <- ggplot(accidentes, aes(y = tmed)) + 
+  ggtitle("tmed") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_bar(fill = "seagreen3", col="seagreen4") +
+  ylab("Grados celsius") +
+  xlab(" ") +
+  coord_flip()
+
+tmax_freq <- ggplot(accidentes, aes(y = tmax)) + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ggtitle("tmax") +
+  geom_bar(fill = "tomato2", col="tomato4") +
+  ylab("Grados celsius") +
+  xlab(" ") +
+  coord_flip()
+
+grid.arrange(tmin_freq, 
+             tmed_freq, 
+             tmax_freq,
+             nrow = 1, 
+             top = "Frecuencia de las temperaturas",
+             left="Frecuencia")
+
+
+prec_freq <- ggplot(accidentes, aes(y = prec)) + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_bar(fill = "darkorange", col="moccasin") +
+  ggtitle("Precipitaciones") +
+  ylab("mm") +
+  xlab(" ") +
+  coord_flip()
+
+sol_freq <- ggplot(accidentes, aes(y = sol)) + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_bar(fill = "deeppink", col="lightpink") +
+  ggtitle("Sol") +
+  ylab("Horas") +
+  xlab(" ") +
+  coord_flip()
+
+lun_freq <- ggplot(accidentes, aes(y = luna)) + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_bar(fill = "darkcyan", col="powderblue") +
+  ggtitle("Luna") +
+  ylab("Superficie iluminada") +
+  xlab(" ") +
+  coord_flip()
+
+grid.arrange(prec_freq, 
+             sol_freq, 
+             lun_freq,
+             nrow = 1, 
+             top = "Otras condiciones meteorológicas y periódicas",
+             left="Frecuencia")
+
+
+altitud_freq <- ggplot(accidentes, aes(y = altitud)) + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_bar(fill = "darkorchid4", col="darkorchid1") +
+  ggtitle("Altitud") +
+  ylab("metros") +
+  xlab(" ") +
+  coord_flip()
+
+pendiente_freq <- ggplot(accidentes, aes(y = pendiente)) + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_bar(fill = "seagreen3", col="seagreen4") +
+  ggtitle("Pendiente") +
+  ylab("Metros") +
+  xlab(" ") +
+  coord_flip()
+
+imd_freq <- ggplot(accidentes, aes(y = imd_total)) + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_bar(fill = "tomato2", col="tomato4") +
+  ggtitle("IMD") +
+  ylab("Vehículos") +
+  xlab(" ") +
+  coord_flip()
+
+grid.arrange(altitud_freq, 
+             pendiente_freq, 
+             imd_freq,
+             nrow = 1, 
+             top = "Otras condiciones de la zona del accidente",
+             left="Frecuencia")
+
+mu30_freq <- ggplot(accidentes, aes(y = total_mu30df)) + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_bar(fill = "darkorange", col="moccasin") +
+  ggtitle("Personas muertas") +
+  ylab("Personas") +
+  xlab(" ") +
+  coord_flip()
+
+hg30_freq <- ggplot(accidentes, aes(y = total_hg30df)) + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_bar(fill = "deeppink", col="lightpink") +
+  ggtitle("Personas hospitalizadas") +
+  ylab("Personas") +
+  xlab(" ") +
+  coord_flip()
+
+hl30_freq <- ggplot(accidentes, aes(y = total_hl30df)) + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_bar(fill = "darkcyan", col="powderblue") +
+  ggtitle("Personas no hospitalizadas") +
+  ylab("Personas") +
+  xlab(" ") +
+  coord_flip()
+
+grid.arrange(mu30_freq, 
+             hg30_freq, 
+             hl30_freq,
+             nrow = 1, 
+             top = "Frecuencia de fallecidos y heridos en 30 días",
+             left="Frecuencia")
+```
+Se pasa al estudio de las **variables categóricas**, aunque en la **temporalidad** y espacialidad se profundizará en apartados específicos. En el caso de aquellas tengan el **valor decodificado**, se opta por analizar la que contiene esa información para facilitar la interpretabilidad. Además, no se incluye el análisis de `taxonkey` puesto que también es una decodificación del tipo de animal involucrado en el accidente. Aquellas variables con más niveles se estudian mediante **gráficos de barras** interactivos, que facilitan su interpretación y selección:
+
+
+```{r, out.width="100%", out.height=430} 
+# Tipo animal
+freq_animal1 <- ggplot(data.frame(accidentes), aes(x=reorder(nombre_tipo_animal_1f, nombre_tipo_animal_1f,
+                                                          function(x)-length(x)), 
+                                                fill = nombre_tipo_animal_1f)) +
+  ggtitle("Distribución de los accidentes según el tipo de animal") +
+  xlab("Animal") +
+  ylab("Número de accidentes") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_color_gradientn(colours = terrain.colors(10)) +
+  labs(fill='Animal')  +
+  geom_bar()
+ggplotly(freq_animal1)
+
+# Velocidad máxima
+freq_maxspeed <- ggplot(data.frame(accidentes), aes(x = maxspeed, 
+                                                fill = maxspeed)) +
+  ggtitle("Distribución de los accidentes según la velocidad máxima") +
+  xlab("Kilómetros por hora") +
+  ylab("Número de accidentes") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_brewer(palette = "Set3") +
+  labs(fill='Velocidad máxima')  +
+  geom_bar()
+ggplotly(freq_maxspeed)
+
+```
+```{r, out.width="100%", out.height=600} 
+# Uso suelo
+freq_suelo <- ggplot(data.frame(accidentes), aes(x=reorder(uso_suelo, uso_suelo,
+                                                          function(x)-length(x)), 
+                                                fill = uso_suelo)) +
+  ggtitle("Distribución de los accidentes según el uso del suelo") +
+  xlab("Uso del suelo") +
+  ylab("Número de accidentes") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_color_gradientn(colours = terrain.colors(10)) +
+  labs(fill='Uso del suelo')  +
+  geom_bar()
+ggplotly(freq_suelo)
+
+# Titularidad de la vía
+freq_suelo <- ggplot(data.frame(accidentes), aes(x=reorder(nombre_titularidad_via, nombre_titularidad_via,
+                                                          function(x)-length(x)), 
+                                                fill = nombre_titularidad_via)) +
+  ggtitle("Distribución de los accidentes según la titularidad de la vía") +
+  xlab("Titularidad de la vía") +
+  ylab("Número de accidentes") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(fill='Titularidad de la vía')  +
+  geom_bar()
+ggplotly(freq_suelo)
+```
+Como los **animales** son parte de los protagonistas de este proyecto, se estudia también su frecuencia relativa:
+
+```{r}
+kable(prop.table(table(accidentes$nombre_tipo_animal_1f)),
+      digits=2, 
+      align='l', 
+      caption="Frecuencia relativa de la parte del día") %>%
+  kable_styling(bootstrap_options = Form.Basic)
+
+```
+
+
+Para aquellas variables categóricas con menos **categorías posibles**, se opta por comparar su distribución mediante ***pie charts***
+
+```{r}
+freq_accd <- accidentes %>% 
+  group_by(nombre_ind_accd) %>% 
+  dplyr::summarise(n = n()) %>% 
+  ggplot(aes(x = "", y = n, fill = nombre_ind_accd)) + 
+    geom_bar(stat = "identity", width = 2) + 
+    coord_polar("y") + 
+    geom_text(aes(label = n), position = position_stack(vjust = 0.5), check_overlap = T, size = 5) + 
+    labs(x = NULL, y = NULL, fill = NULL, title = "Accd") + 
+    theme(axis.line = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(size = 14, hjust = 0.5), legend.position="bottom") +
+  guides(fill=guide_legend(nrow=2,byrow=TRUE))
+
+freq_acciv <- accidentes %>% 
+  group_by(nombre_ind_acciv) %>% 
+  dplyr::summarise(n = n()) %>% 
+  ggplot(aes(x = "", y = n, fill = nombre_ind_acciv)) + 
+    geom_bar(stat = "identity", width = 2) + 
+    coord_polar("y") + 
+    geom_text(aes(label = n), position = position_stack(vjust = 0.5), check_overlap = T, size = 5) + 
+    labs(x = NULL, y = NULL, fill = NULL, title = "Acciv") + 
+    theme(axis.line = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(size = 14, hjust = 0.5), legend.position="bottom") +
+  guides(fill=guide_legend(nrow=2,byrow=TRUE))
+
+grid.arrange(freq_accd, 
+             freq_acciv, 
+             nrow = 1)
+
+# Sentido
+freq_sentido <- accidentes %>% 
+  group_by(nombre_sentido) %>% 
+  dplyr::summarise(n = n()) %>% 
+  ggplot(aes(x = "", y = n, fill = nombre_sentido)) + 
+    geom_bar(stat = "identity", width = 2) + 
+    coord_polar("y") + 
+    geom_text(aes(label = n), position = position_stack(vjust = 0.5), check_overlap = T, size = 5) + 
+    labs(x = NULL, y = NULL, fill = NULL, title = "Sentido") + 
+    theme(axis.line = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(size = 14, hjust = 0.5), legend.position="bottom") +
+  guides(fill=guide_legend(nrow=2,byrow=TRUE))
+
+
+# Tipo vía
+freq_via <- accidentes %>% 
+  group_by(nombre_tipo_via) %>% 
+  dplyr::summarise(n = n()) %>% 
+  ggplot(aes(x = "", y = n, fill = nombre_tipo_via)) + 
+    geom_bar(stat = "identity", width = 2) + 
+    coord_polar("y") + 
+    geom_text(aes(label = n), position = position_stack(vjust = 0.5), check_overlap = T, size = 5) + 
+    labs(x = NULL, y = NULL, fill = NULL, title = "Tipo de vía") + 
+    theme(axis.line = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(size = 14, hjust = 0.5), legend.position="bottom") +
+  guides(fill=guide_legend(nrow=2,byrow=TRUE))
+
+# Tipo animal 2
+freq_animal <- accidentes %>% 
+  group_by(nombre_tipo_animal_2f) %>% 
+  dplyr::summarise(n = n()) %>% 
+  ggplot(aes(x = "", y = n, fill = nombre_tipo_animal_2f)) + 
+    geom_bar(stat = "identity", width = 2) + 
+    coord_polar("y") + 
+    geom_text(aes(label = n), position = position_stack(vjust = 0.5), check_overlap = T, size = 5) + 
+    labs(x = NULL, y = NULL, fill = NULL, title = "Tipo de animal") + 
+    theme(axis.line = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(size = 14, hjust = 0.5), legend.position="bottom",  legend.box="vertical") +
+  guides(fill=guide_legend(nrow=2,byrow=TRUE))
+
+grid.arrange(freq_sentido, 
+             freq_via, 
+             freq_animal,
+             nrow = 1)
+```
+
+En la mayoría de accidentes con animales, las consecuencias **no conllevan víctimas mortales** (`total_mu30df`), **ni víctimas de ningún tipo** (`total_hg30df` y `total_hl30df`), conclusión que se confirma con el análisis de las variables `nombre_ind_accd` y `nombre_ind_acciv`. 
+
+Del análisis de las variables continuas también se comprueba, como se sospechaba, que la proporción de superficie de **Luna** iluminada en el momento del accidente puede llegar a ser un factor a tener en cuenta. Además, al contrario de lo que ocurre con otro tipos de accidentes de tráfico, se descubre que la mayor frecuencia de accidentes se da cuando el **IMD** es más bajo, es decir, en la vías cuya media de intensidad circulatoria es menor. 
+
+Por otro lado, los **jabalíes, corzos y ciervos** son los animales presentes en la mayoría de los accidentes, como ya adelantaban los estudios analizados en el estado del arte. Sin embargo, aquellos clasificados como **'caninos'** se sitúan en el número tres, por lo que hay que tenerlo en cuenta ya que, al ser también clasificados como domésticos por la DGT, no se tienen sus datos de distribución del GBIF. 
+
+Además, se descubre que la mayoría de los accidentes se producen en vías cuya **velocidad máxima permitida** es de **80 kilómetros** por hora o más. 
+
+Asimismo, la gran mayoría de los accidentes se producen en áreas rodeadas de **cultivos**.
+
+Por último, la **titularidad** de la vía, el **tipo** y el **sentido** no aportan información que parezca que llegue a ser relevante en este proyecto. 
+
+## Análisis temporal
+
+El análisis temporal se aborda analizando las variables temporales según las categorías establecidas a lo largo del proceso de integración de los datos y generación de nuevas variables, de manera que se estudia de lo general a lo concreto:
+
+```{r, out.width="100%", out.height=450} 
+# Mes
+freq_mes <- ggplot(data.frame(accidentes), aes(x = mes_1f, 
+                                                fill = nombre_mes)) +
+  ggtitle("Distribución de los accidentes por meses") +
+  xlab("Mes") +
+  ylab("Número de accidentes") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_brewer(palette = "Paired") +
+  labs(fill='Mes')  +
+  geom_bar()
+ggplotly(freq_mes)
+
+# Día de la semana
+freq_dia <- ggplot(data.frame(accidentes), aes(x = dia_semana, 
+                                                fill = nombre_dia_semana)) +
+  ggtitle("Distribución de los accidentes durante la semana") +
+  xlab("Día") +
+  ylab("Número de accidentes") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_brewer(palette = "Accent") +
+  labs(fill='Día')  +
+  geom_bar()
+ggplotly(freq_dia)
+
+# Parte del día
+freq_parte_dia <- ggplot(data.frame(accidentes), aes(x=reorder(parte_dia, parte_dia,
+                                                          function(x)-length(x)), 
+                                                fill = parte_dia)) +
+  ggtitle("Distribución de los accidentes durante el día") +
+  xlab("Parte del día") +
+  ylab("Número de accidentes") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_brewer(palette = "Set2") +
+  labs(fill='Parte del día')  +
+  geom_bar()
+ggplotly(freq_parte_dia)
+```
+
+Se observa claramente que de **octubre a enero** son los meses en los que más accidentes con animales involucrados se registran, aunque esta diferencia no es tan relevante si se comparan los **días de la semana** entre ellos. Por último, que la gran mayoría de los accidentes se producen de **noche** y casi los mismos de día que en la suma del anochecer y el atardecer aunque los días son mucho más largos. 
+
+Debido a la importancia de la componente temporal en este *Trabajo Final de Máster*, se decide mostrar también la proporciones dentro de la variable que contiene el momento del día en el que se produce el accidente:
+
+```{r}
+kable(prop.table(table(accidentes$parte_dia)),
+      digits=2, 
+      align='l', 
+      caption="Frecuencia relativa de la parte del día") %>%
+  kable_styling(bootstrap_options = Form.Basic)
+
+```
+
+Debido a que se tienen **datos diarios** de los accidentes, se opta por empezar visualizando la serie histórica completa para, después, evaluar cada uno de los años. Para ello, se emplea **infografía interactiva** que aporta un valor más preciso de cada fecha si se pasa  por encima gracias al *tooltip* y, como valor añadido, permite **ampliar periodos específicos**, lo que facilita, por ejemplo, comparar el mismo mes de todos los años de forma cómoda e intuitiva sin tener que hacer más gráficos: 
+
+```{r}
+# Todo
+serie_total <- data.frame(table(accidentes$fecha_accidente))
+tserie_total <- read.zoo(serie_total)
+
+# 2016
+accidentes_2016 <- subset(accidentes, subset = anyo == 2016)
+serie_2016 <- data.frame(table(accidentes_2016$fecha_accidente))
+tserie_2016 <- read.zoo(serie_2016)
+
+# 2017
+accidentes_2017 <- subset(accidentes, subset = anyo == 2017)
+serie_2017 <- data.frame(table(accidentes_2017$fecha_accidente))
+tserie_2017 <- read.zoo(serie_2017)
+
+# 2018
+accidentes_2018 <- subset(accidentes, subset = anyo == 2018)
+serie_2018 <- data.frame(table(accidentes_2018$fecha_accidente))
+tserie_2018 <- read.zoo(serie_2018)
+
+# 2019
+accidentes_2019 <- subset(accidentes, subset = anyo == 2019)
+serie_2019 <- data.frame(table(accidentes_2019$fecha_accidente))
+tserie_2019 <- read.zoo(serie_2019)
+
+# 2020
+accidentes_2020 <- subset(accidentes, subset = anyo == 2020)
+serie_2020 <- data.frame(table(accidentes_2020$fecha_accidente))
+tserie_2020 <- read.zoo(serie_2020)
+
+# 2021
+accidentes_2021 <- subset(accidentes, subset = anyo == 2021)
+serie_2021 <- data.frame(table(accidentes_2021$fecha_accidente))
+tserie_2021 <- read.zoo(serie_2021)
+```
+
+```{r, out.width="100%", out.height=500} 
+color<-rainbow(6)
+
+ts_plot(tserie_total,
+        title = "Todos los accidentes de tráfico con animales entre 2016 y 2021",
+        Xtitle = "Fecha",
+        Ytitle = "Accidentes",
+        slider = TRUE)
+ts_plot(tserie_2016,
+        title = "Accidentes de tráfico con animales en 2016",
+        Xtitle = "Fecha",
+        Ytitle = "Accidentes",
+        color = "darkmagenta",
+        slider = TRUE)
+ts_plot(tserie_2017,
+        title = "Accidentes de tráfico con animales en 2017",
+        Xtitle = "Fecha",
+        Ytitle = "Accidentes",
+        color = "maroon",
+        slider = TRUE)
+ts_plot(tserie_2018,
+        title = "Accidentes de tráfico con animales en 2018",
+        Xtitle = "Fecha",
+        Ytitle = "Accidentes",
+        color = "darkorange",
+        slider = TRUE)
+ts_plot(tserie_2019,
+        title = "Accidentes de tráfico con animales en 2019",
+        Xtitle = "Fecha",
+        Ytitle = "Accidentes",
+        color = "deepskyblue",
+        slider = TRUE)
+ts_plot(tserie_2020,
+        title = "Accidentes de tráfico con animales en 2020",
+        Xtitle = "Fecha",
+        Ytitle = "Accidentes",
+        color = "olivedrab",
+        slider = TRUE)
+ts_plot(tserie_2021,
+        title = "Accidentes de tráfico con animales en 2021",
+        Xtitle = "Fecha",
+        Ytitle = "Accidentes",
+        color = "red",
+        slider = TRUE)
+```
+
+A primera vista, parece que se pueden observar **tendencias similares** comparando todos los **años** entre sí, aunque no ocurre lo mismo de una manera tan clara comparando unos **meses** con otros. Además, se detecta la anomalía que comienza en marzo de **2020**, previsible debido a que fue cuando comenzó en España el confinamiento para hacer frente a la pandemia de coronavirus.
+
+A continuación se estudian los resultados de la **función de autocorrelación (ACF)** con un intervalo de confianza del 95%, que están representadas por las dos líneas horizontales discontinuas:
+
+```{r, out.width="100%", out.height=300} 
+acf_year <- ggAcf(tserie_total[,"Freq"]) +
+  ggtitle("Gráfico ACF de accidentes de tráfico con animales en España 2016-2021") +
+            theme(plot.title = element_text(hjust = 0.5))
+ggplotly(acf_year)
+
+acf_2016 <- ggAcf(tserie_2016[,"Freq"]) +
+  ggtitle("Gráfico ACF de accidentes de tráfico con animales en España 2016") +
+            theme(plot.title = element_text(hjust = 0.5))
+ggplotly(acf_2016)
+
+acf_2017 <- ggAcf(tserie_2017[,"Freq"]) +
+  ggtitle("Gráfico ACF de accidentes de tráfico con animales en España 2017") +
+            theme(plot.title = element_text(hjust = 0.5))
+ggplotly(acf_2017)
+
+acf_2018 <- ggAcf(tserie_2018[,"Freq"]) +
+  ggtitle("Gráfico ACF de accidentes de tráfico con animales en España 2018") +
+            theme(plot.title = element_text(hjust = 0.5))
+ggplotly(acf_2018)
+
+acf_2019 <- ggAcf(tserie_2019[,"Freq"]) +
+  ggtitle("Gráfico ACF de accidentes de tráfico con animales en España 2020") +
+            theme(plot.title = element_text(hjust = 0.5))
+ggplotly(acf_2019)
+
+acf_2020 <- ggAcf(tserie_2020[,"Freq"]) +
+  ggtitle("Gráfico ACF de accidentes de tráfico con animales en España 2020") +
+            theme(plot.title = element_text(hjust = 0.5))
+ggplotly(acf_2020)
+
+acf_2021 <- ggAcf(tserie_2021[,"Freq"]) +
+  ggtitle("Gráfico ACF de accidentes de tráfico con animales en España 2021")+
+            theme(plot.title = element_text(hjust = 0.5))
+ggplotly(acf_2021)
+```
+Todas las autocorrelaciones son significativamente distintas de cero. Por lo tanto, la **serie temporal no es aleatoria** ni en el estudio de su conjunto ni para cada uno de los años, incluido el 2020. Además, existe un **alto grado de autocorrelación** entre todas las observaciones adyacentes (lag = 1), casi adyacentes (lag = 2) y no adyacentes en el gráfico ACF, aunque se detecta que en 2018 esta correlación es ligeramente menor.
+
+Por último, con el **test de Raíz Unitaria de Kwiatkowski (KPSS)**, se estudia si los datos son **estacionarios** tanto en su conjunto como para cada uno de los años. Para ello, se plantean las siguientes hipótesis nula y alternativa:
+
+- $H_0$: La serie es estacionaria 
+
+- $H_1$: La serie no es estacionaria
+
+
+```{r}
+tserie_total[,"Freq"] %>% ur.kpss() %>% summary()
+tserie_2016[,"Freq"] %>% ur.kpss() %>% summary()
+tserie_2017[,"Freq"] %>% ur.kpss() %>% summary()
+tserie_2018[,"Freq"] %>% ur.kpss() %>% summary()
+tserie_2019[,"Freq"] %>% ur.kpss() %>% summary()
+tserie_2020[,"Freq"] %>% ur.kpss() %>% summary()
+tserie_2021[,"Freq"] %>% ur.kpss() %>% summary()
+```
+
+
+En todos los casos se debe **rechazar la hipótesis nula de estacionariedad**, ya que el valor del estadístico de prueba es más extremo que los valores críticos del 10%, 5% y 1% (Value of test-statistic > 0,119, Value of test-statistic > 0,146, Value of test-statistic > Value of test-statistic).
+
+### Conclusiones temporales
+
+De **octubre a enero** son los meses en los que más accidentes con animales involucrados se registran. No existe tal diferencia si se comparan **días de la semana** entre ellos. Lo más destacado, sin embargo, es que la gran mayoría de los accidentes se producen de **noche** y casi los mismos de día (10 horas) que en la suma del anochecer (1 hora) y el atardecer (1 hora).
+
+En cuanto a la evolución de los accidentes en el tiempo, se pueden observar **tendencias similares** comparando todos los **años** entre sí, pero no en la comparación de los **meses**. Como era previsible por los efectos de la pandemia de coronavirus, **2020** es un año anómalo. Del mismo modo, se trabajó en el primer apartado del análisis la clara importancia de la superficie de la **Luna** iluminada, que también se puede entender como una componente temporal puesto que su ciclo es de 28 días. 
+
+El análisis de las autocorrelaciones arroja que la **serie temporal no es aleatoria** ni en el estudio de su conjunto ni para cada uno de los años, incluido el 2020. Además, existe un **alto grado de autocorrelación** entre todas las observaciones adyacentes, casi adyacentes y no adyacenteses.
+
+A pesar de esta no aleatoriedad y fuerte autocorrelación, se verifica estadísticamente que los datos **no son estacionales**.
+
+## Análisis espacial
+
+Para ir de lo general a lo concreto, se aborda el análisis de la espacialidad de más a menos área de estudio:
+
+```{r, out.width="100%", out.height=600} 
+# Comunidad autónoma
+freq_CCAA <- ggplot(data.frame(accidentes), aes(x=reorder(nombre_ccaa,nombre_ccaa,
+                                                          function(x)-length(x)), 
+                                                fill = nombre_ccaa)) +
+  ggtitle("Distribución de los accidentes por comunidades autónomas") +
+  xlab("Comunidad autónoma") +
+  ylab("Número de accidentes") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_color_gradientn(colours = rainbow(10)) +
+  labs(fill='Comunidad autónoma')  +
+  geom_bar()
+ggplotly(freq_CCAA)
+
+# Provincia
+freq_PROV <- ggplot(data.frame(accidentes), aes(x=reorder(nombre_provincia, nombre_provincia,
+                                                          function(x)-length(x)), 
+                                                fill = nombre_provincia)) +
+  ggtitle("Distribución de los accidentes por provincias") +
+  xlab("Provincia") +
+  ylab("Número de accidentes") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_color_gradientn(colours = rainbow(10)) +
+  labs(fill='Provincia')  +
+  geom_bar()
+ggplotly(freq_PROV)
+
+```
+
+Se observa que en **País Vasco** y **Cataluña** no hay registros y esto es debido a que los datos no han sido proporcionados por la DGT. 
+
+Por último, como hay muchos **municipios** diferentes, se opta por mostrar las frecuencias en forma de tabla por si hay se necesita recurrir a ella en otras fases del proyecto:
+
+```{r}
+kable(data.frame(table(accidentes$nombre_municipio)),
+      align='l', 
+      caption= "Frecuencia de accidentes con animales en cada municipio") %>%
+  kable_styling(bootstrap_options = Form.Basic) %>%
+    scroll_box(width = "100%", height = "470px")
+```
+
+A partir de este análisis surge la duda de si los accidentes con los **tipos de animales** se distribuyen igual en todas las **partes de España** para poder tomar decisiones de cara al modelado:
+
+```{r, out.width="100%", out.height=600} 
+# Provincia y tipo animal
+freq_PROV <- ggplot(data.frame(accidentes), aes(x=reorder(nombre_provincia, nombre_provincia,
+                                                          function(x)-length(x)), 
+                                                fill = nombre_tipo_animal_1f)) +
+  ggtitle("Distribución de los accidentes por provincias según el animal") +
+  xlab("Provincia") +
+  ylab("Número de accidentes") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_color_gradientn(colours = terrain.colors(10)) +  labs(fill='Mes')  +
+  geom_bar()
+ggplotly(freq_PROV)
+```
+
+Aunque el jabalí es el animal más involucrado en accidentes de tráfico, la probabilidad de accidente con **un tipo de animal u otro** varía en función de la **provincia**. Por ejemplo, en Soria en mucho más probable chocarse con un corzo.
+
+A la luz de toda la información obtenida, surgen dos necesidades: concretar mejor las **zonas con alta probabilidad** de este tipo de colisiones y hacerlo teniendo en cuenta el **tipo de animal** en cada caso. Este es el motivo por el que se decide desarrollar diferentes capas de **estimación de densidad de Kernel (KDE)**, que permite estimar la función de densidad de probabilidad de los accidentes con animales involucrados con el objetivo de aumentar las probabilidades de precisión de los modelos.  
+
+Esta información es muy relevante y se va a productivizar para poder emplearse en los modelos, por lo que para seguir con la línea del proyecto, se deciden hacer los cálculos en **Python**, que se pueden consultar en **`kde_analysis`** del repositorio en GitHub. De este modo, además de la visualización que se muestra a continuación para cada tipo de animal, se ha guardado un ***array* que contiene la información de probabilidad** en cada uno de los píxeles, lo que puede mejorar la precisión del modelo predictivo. Por tanto, a continuación solo se ven las imágenes resultantes del proceso, aunque no es la información más relevante del mismo:
+
+```{r, echo=FALSE, out.width="130%", out.height= "130%"}
+
+knitr::include_graphics("01.png")
+
+knitr::include_graphics("02.png")
+
+knitr::include_graphics("03.png")
+
+knitr::include_graphics("04.png")
+
+knitr::include_graphics("05.png")
+
+knitr::include_graphics("06.png")
+
+knitr::include_graphics("07.png")
+
+knitr::include_graphics("08.png")
+
+knitr::include_graphics("09.png")
+
+knitr::include_graphics("10.png")
+```
+
+### Conclusiones espaciales
+
+Los datos tienen una **componente espacial** que puede ser crítica para el proyecto. Por tanto, no es tan importante conocer en qué comunidades autónomas, provincias o municipios se produce cada accidente con animales, sino el análisis de cada registro en una **ubicación concreta**. 
+
+Del mismo modo, la distribución de los accidentes depende de cada **tipo de animal**, lo cual era previsible porque la fauna no se distribuye de forma homogénea por España, tal y como se pudo comprobar al analizar los datos procedentes de GBIF. Por tanto, el **conocimiento más relevante** que se extrae de este punto son lo *arrays* resultantes que contienen la **estimación de densidad de kernel** de los accidentes para cada uno de los animales, cuya visualización se ha mostrado. 
+
+# Importación de datos finales
+
+```{r}
+accidentes.dim <- dim(accidentes)
+```
+
+El conjunto de datos resultante de este proceso de análisis está compuesto de **`r accidentes.dim[1]` registros** con **`r accidentes.dim[2]` campos** por cada registro, que siguen la siguiente estructura:
+
+```{r}
+str(accidentes)
+```
+
+Aunque no se trabajará con todos ellos en los modelos, se importan todos a una tabla nueva de la base de datos, llamada `accidentes_sí`, que será con la que se trabajará a partir de este momento del proyecto.
+
+Por último, se cierra la conexión a la bases de datos `tfm`:
+
+```{r}
+dbDisconnect(con)
+```
+
+# Bibliografía
+
+- ARRIBAS-BEL, Daniel. *KDE for spatial data* [en línea]. 2015. Fecha de consulta: 8 de diciembre de 2022. Disponible en: https://gist.github.com/darribas/9109901
+
+- BENGOECHEA ISASA, Jose Ignacio. *NBA Gap Cleaning* [en línea]. 1 julio 2018. Fecha de consulta: 7 de diciembre de 2022. Disponible en: https://github.com/Bengis/nba-gap-cleaning
+
+- BERNADÓ MANSILLA, Ester. *Contrastes de hipótesis* [en línea]. Barcelona: UOC, 2020 Disponible con acceso restringido desde el campus virtual de la UOC.
+
+- DALGAARD, Peter. *Introductory Statistics with R*. 2002, Springer New York, NY. ISBN 978-0-387-22632-3X.
+
+- DATANOVIA. *Rename Data Frame Columns in R* [en línea].  Fecha de consulta: 10 de diciembre de 2022. Disponible en: https://www.datanovia.com/en/lessons/rename-data-frame-columns-in-r/
+
+- FERNÁNDEZ DEL VISO, D.S. *Correlación* [en línea]. 24 de noviembre de 2018. Fecha de consulta: 17 de diciembre de 2022. Disponible en: https://rpubs.com/dsfernandez/442629
+
+- FERNÁNDEZ, Freddy y USUGA, Olga. *Manual de R* [en línea]. 26 de julio de 2021. Fecha de consulta: diciembre de 2022. Disponible en: https://fhernanb.github.io/Manual-de-R/
+
+- GIL BELLOSTA, Carlos J. *Introducción a ggplot2 y ggmap* [en línea]. Barcelona: UOC, sf. Disponible con acceso restringido desde el campus virtual de la UOC.
+
+- GOOGLE. *RSeek* [en línea]. Disponible en: https://rseek.org/
+
+- GROLEMUND, Garrett y WICKHAM, Hadley. *R for Data Science*. [en línea]. 2016, Sebastopol, California : O’Reilly Media. ISBN  978-1-491-91039-9. Disponible en: https://learning.oreilly.com/library/view/mastering-shiny/9781492047377
+
+- HAN, Jiawei, KAMBER, Micheline y PEI, Jian. *Data Preprocessing*. En: 'Data Mining: Concepts and Techniques'. Morgan Kaufmann. pp. 83-124, 2012. ISBN 978-0-12-381479-1.
+
+- J. J. ALLAIRE, Garrett Grolemund y XIE, Yihui. *R Markdown: The Definitive Guide*. [en línea]. 2018, Boca Raton, Florida : Chapman; Hall/CRC. ISBN 9781138359338. Disponible en: https://bookdown.org/yihui/rmarkdown
+
+- KIM, Alex. *How to Compare Two Distributions in Practice* [en línea]. 25 de noviembre de 2019. Fecha de consulta: 20 de diciembre de 2022. Disponible en: https://towardsdatascience.com/how-to-compare-two-distributions-in-practice-8c676904a285
+
+- LOVELL, Christopher. *Log-normal fitting and Q-Q plots in R* [en línea]. 14 de mayo de 2016. Fecha de consulta: 19 de diciembre de 2021. Disponible en: https://www.christopherlovell.co.uk/blog/2016/05/14/lognormal-fit-QQ-R.html
+
+- LUQUE, Pedro. *Cómo crear Tablas de información en R Markdown* [en línea]. Sevilla: Universidad de Sevilla, 2019. Disponible en: https://www.uv.es/conesa/CursoR/material/Manual-R-commander.pdf
+
+- MATHWORKS. *lillietest* [en línea]. Fecha de consulta: 19 de diciembre de 2022. Disponible en: https://es.mathworks.com/help/stats/lillietest.html
+
+- MIT. *Nonparametric statistics and model selection* [en línea]. Fecha de consulta: 19 de diciembre de 2022. Disponible en: http://www.mit.edu/~6.s085/notes/lecture5.pdf
+
+- M. KELMANSKY, Diana. *Gráficos Cuantil-Cuantil (Q-Q plots)* [en línea]. Fecha de consulta: 19 de diciembre de 2022. Disponible en: http://www.dm.uba.ar/materias/analisis_de_datos/2008/1/teoricas/Teor5.pdf
+
+- OLAYINKA, Arimoro. *A simple guide on connecting RStudio to a PostgreSQL database* [en línea]. Fecha de consulta: 10 de diciembre de 2022.  Disponible en: 
+https://medium.com/geekculture/a-simple-guide-on-connecting-rstudio-to-a-postgresql-database-9e35ccdc08be
+
+- OSBORNE, Jason W. *Data Cleaning Basics: Best Practices in Dealing with Extreme Scores*. Newborn and Infant Nursing Reviews. 2010. Vol. 10, n° 1. DOI 10.1053/j.nainr.2009.12.009.
+
+- RDRR. ColSums: *Form Row and Column Sums and Means* [en línea].Fecha de consulta: 12 de diciembre de 2022. Disponible en: https://rdrr.io/r/base/colSums.html
+
+- RDRR. *Plotly: Create Interactive Web Graphics via ‘plotly.js’* [en línea]. Fecha de consulta: diciembre de 2022. Disponible en: https://plotly.com/r/
+
+- ROBIRA ESCOFET, Carles. *Contraste de hipótesis* [en línea]. Barcelona: UOC, SF. Disponible con acceso restringido desde el campus virtual de la UOC.
+
+- RSTUDIO. *Guía de estilo para R* [en línea]. Fecha de consulta: diciembre de 2022. Disponible en: https://rpubs.com/FvD/guia-estilo-r
+
+- RSTUDIO. *RStudio Cheatsheet*s [en línea]. Fecha de consulta: diciembre de 2022. Disponible en: https://www.rstudio.com/resources/cheatsheets/
+
+- SQUIRE, Megan. *Clean Data*. 2015, Packt Publishing Ltd. ISBN 978-1785284014.
+
+- SUBIRATS MATÉ, Laia, PÉREZ TRENARD, Diego Oswaldo y CALVO GONZÁLEZ, Mireia, 2019. *Introducción a la limpieza y análisis de los datos*. [en línea]. Editorial UOC. Disponible en: https://materials.campus.uoc.edu/daisy/Materials/PID_00265704/pdf/PID_00265704.pdf
+
+- VANDERPLAS, Jake. *Kernel Density Estimation in Python* [en línea]. Fecha de consulta: 8 de diciembre de 2022. Disponible en: http://jakevdp.github.io/blog/2013/12/01/kernel-density-estimation/
+
+- VENABLES, Bill. *[R] plotting the lognormal density curve* [en línea]. Fecha de consulta: 19 de diciembre de 2021. Disponible en: https://stat.ethz.ch/pipermail/r-help/2003-April/032058.html
+
+- YIHUI XIE, Christophe Dervieux y RIEDERER, Emily. *R Markdown Cookbook*. [en línea]. 2022, Boca Raton, Florida : Chapman; Hall/CRC. ISBN  9780367563837. Disponible en: https://bookdown.org/yihui/rmarkdown-cookbook/

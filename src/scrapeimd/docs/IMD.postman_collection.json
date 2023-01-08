@@ -1,0 +1,289 @@
+{
+	"info": {
+		"_postman_id": "90c12c06-bd3f-4b8e-8e9f-0c13900855a3",
+		"name": "IMD",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "2016-2018",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://mapas.fomento.gob.es/arcgis/rest/services/MapaTrafico/Mapa2019web/MapServer/2/query?f=json&returnGeometry=true&spatialRel=esriSpatialRelIntersects&maxAllowableOffset=611&geometry={\"xmin\":-4.168968,\"ymin\":38.669294,\"xmax\":-4.125710,\"ymax\":38.676531,\"spatialReference\":{\"wkid\":4326}}&geometryType=esriGeometryEnvelope&inSR=102100&outFields=OBJECTID,provincia,nombre,tipo_carretera,pk_inicio,pk_fin,longitud,vh_km_total,vh_km_ligeros,vh_km_pesados,tipo,imd_total,imd_ligeros,imd_pesados&outSR=102100&quantizationParameters={\"mode\":\"view\",\"originPosition\":\"upperLeft\",\"tolerance\":611,\"extent\":{\"type\":\"extent\",\"xmin\":23816.994099999778,\"ymin\":3902563.5659,\"xmax\":1007380.8782000002,\"ymax\":4847940.832699999,\"spatialReference\":{\"wkid\":25830,\"latestWkid\":25830}}}",
+					"protocol": "https",
+					"host": [
+						"mapas",
+						"fomento",
+						"gob",
+						"es"
+					],
+					"path": [
+						"arcgis",
+						"rest",
+						"services",
+						"MapaTrafico",
+						"Mapa2019web",
+						"MapServer",
+						"2",
+						"query"
+					],
+					"query": [
+						{
+							"key": "f",
+							"value": "json"
+						},
+						{
+							"key": "returnGeometry",
+							"value": "true"
+						},
+						{
+							"key": "spatialRel",
+							"value": "esriSpatialRelIntersects"
+						},
+						{
+							"key": "maxAllowableOffset",
+							"value": "611"
+						},
+						{
+							"key": "geometry",
+							"value": "{\"xmin\":-4.168968,\"ymin\":38.669294,\"xmax\":-4.125710,\"ymax\":38.676531,\"spatialReference\":{\"wkid\":4326}}"
+						},
+						{
+							"key": "geometryType",
+							"value": "esriGeometryEnvelope"
+						},
+						{
+							"key": "inSR",
+							"value": "102100"
+						},
+						{
+							"key": "outFields",
+							"value": "OBJECTID,provincia,nombre,tipo_carretera,pk_inicio,pk_fin,longitud,vh_km_total,vh_km_ligeros,vh_km_pesados,tipo,imd_total,imd_ligeros,imd_pesados"
+						},
+						{
+							"key": "outSR",
+							"value": "102100"
+						},
+						{
+							"key": "quantizationParameters",
+							"value": "{\"mode\":\"view\",\"originPosition\":\"upperLeft\",\"tolerance\":611,\"extent\":{\"type\":\"extent\",\"xmin\":23816.994099999778,\"ymin\":3902563.5659,\"xmax\":1007380.8782000002,\"ymax\":4847940.832699999,\"spatialReference\":{\"wkid\":25830,\"latestWkid\":25830}}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2019",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://mapas.fomento.gob.es/arcgis/rest/services/MapaTrafico/Mapa2019web/MapServer/2/query?f=json&returnGeometry=true&spatialRel=esriSpatialRelIntersects&maxAllowableOffset=4891&geometry=%7B%22xmin%22%3A-405127.979764523%2C%22ymin%22%3A4706558.625566562%2C%22xmax%22%3A-346424.3420496797%2C%22ymax%22%3A4765262.263281406%2C%22spatialReference%22%3A%7B%22wkid%22%3A102100%7D%7D&geometryType=esriGeometryEnvelope&inSR=102100&outFields=OBJECTID%2CProvincia%2CNombre%2CTipo_de_ca%2CPk_inicio%2CPk_fin%2CLongitud%2Cvh_km_tota%2Cvh_km_lige%2Cvh_km_pesa%2CID%2CTipo%2CIMD_total%2CIMD_ligero%2CIMD_pesado&outSR=102100&quantizationParameters=%7B%22mode%22%3A%22view%22%2C%22originPosition%22%3A%22upperLeft%22%2C%22tolerance%22%3A4891%2C%22extent%22%3A%7B%22type%22%3A%22extent%22%2C%22xmin%22%3A23817.173499999568%2C%22ymin%22%3A3902546.972100001%2C%22xmax%22%3A1007492.8156000003%2C%22ymax%22%3A4847946.387800001%2C%22spatialReference%22%3A%7B%22wkid%22%3A25830%2C%22latestWkid%22%3A25830%7D%7D%7D",
+					"protocol": "https",
+					"host": [
+						"mapas",
+						"fomento",
+						"gob",
+						"es"
+					],
+					"path": [
+						"arcgis",
+						"rest",
+						"services",
+						"MapaTrafico",
+						"Mapa2019web",
+						"MapServer",
+						"2",
+						"query"
+					],
+					"query": [
+						{
+							"key": "f",
+							"value": "json"
+						},
+						{
+							"key": "returnGeometry",
+							"value": "true"
+						},
+						{
+							"key": "spatialRel",
+							"value": "esriSpatialRelIntersects"
+						},
+						{
+							"key": "maxAllowableOffset",
+							"value": "4891"
+						},
+						{
+							"key": "geometry",
+							"value": "%7B%22xmin%22%3A-405127.979764523%2C%22ymin%22%3A4706558.625566562%2C%22xmax%22%3A-346424.3420496797%2C%22ymax%22%3A4765262.263281406%2C%22spatialReference%22%3A%7B%22wkid%22%3A102100%7D%7D"
+						},
+						{
+							"key": "geometryType",
+							"value": "esriGeometryEnvelope"
+						},
+						{
+							"key": "inSR",
+							"value": "102100"
+						},
+						{
+							"key": "outFields",
+							"value": "OBJECTID%2CProvincia%2CNombre%2CTipo_de_ca%2CPk_inicio%2CPk_fin%2CLongitud%2Cvh_km_tota%2Cvh_km_lige%2Cvh_km_pesa%2CID%2CTipo%2CIMD_total%2CIMD_ligero%2CIMD_pesado"
+						},
+						{
+							"key": "outSR",
+							"value": "102100"
+						},
+						{
+							"key": "quantizationParameters",
+							"value": "%7B%22mode%22%3A%22view%22%2C%22originPosition%22%3A%22upperLeft%22%2C%22tolerance%22%3A4891%2C%22extent%22%3A%7B%22type%22%3A%22extent%22%2C%22xmin%22%3A23817.173499999568%2C%22ymin%22%3A3902546.972100001%2C%22xmax%22%3A1007492.8156000003%2C%22ymax%22%3A4847946.387800001%2C%22spatialReference%22%3A%7B%22wkid%22%3A25830%2C%22latestWkid%22%3A25830%7D%7D%7D"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2020",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://mapas.fomento.gob.es/arcgis/rest/services/MapaTrafico/Mapa2020web/MapServer/1/query?f=json&returnGeometry=true&spatialRel=esriSpatialRelIntersects&maxAllowableOffset=4891&geometry=%7B%22xmin%22%3A-567923.5163995856%2C%22ymin%22%3A4914688.312122988%2C%22xmax%22%3A-509219.8786847424%2C%22ymax%22%3A4973391.949837831%2C%22spatialReference%22%3A%7B%22wkid%22%3A102100%7D%7D&geometryType=esriGeometryEnvelope&inSR=102100&outFields=id_trafico%2Cgeom%2Cvia%2Cclase%2Cprovincia%2Cpkinicio_t%2Cpkfin_t%2Clongitud%2Cvhkmtot%2Cvhkmlig%2Cvhkmpes%2Cimdtot%2Cimdlig%2Cimdpes%2Cesri_oid&outSR=102100&quantizationParameters=%7B%22mode%22%3A%22view%22%2C%22originPosition%22%3A%22upperLeft%22%2C%22tolerance%22%3A4891%2C%22extent%22%3A%7B%22type%22%3A%22extent%22%2C%22xmin%22%3A23817.173499999568%2C%22ymin%22%3A3902546.972100001%2C%22xmax%22%3A1007490.1045000004%2C%22ymax%22%3A4847205.210200001%2C%22spatialReference%22%3A%7B%22wkid%22%3A25830%2C%22latestWkid%22%3A25830%7D%7D%7D",
+					"protocol": "https",
+					"host": [
+						"mapas",
+						"fomento",
+						"gob",
+						"es"
+					],
+					"path": [
+						"arcgis",
+						"rest",
+						"services",
+						"MapaTrafico",
+						"Mapa2020web",
+						"MapServer",
+						"1",
+						"query"
+					],
+					"query": [
+						{
+							"key": "f",
+							"value": "json"
+						},
+						{
+							"key": "returnGeometry",
+							"value": "true"
+						},
+						{
+							"key": "spatialRel",
+							"value": "esriSpatialRelIntersects"
+						},
+						{
+							"key": "maxAllowableOffset",
+							"value": "4891"
+						},
+						{
+							"key": "geometry",
+							"value": "%7B%22xmin%22%3A-567923.5163995856%2C%22ymin%22%3A4914688.312122988%2C%22xmax%22%3A-509219.8786847424%2C%22ymax%22%3A4973391.949837831%2C%22spatialReference%22%3A%7B%22wkid%22%3A102100%7D%7D"
+						},
+						{
+							"key": "geometryType",
+							"value": "esriGeometryEnvelope"
+						},
+						{
+							"key": "inSR",
+							"value": "102100"
+						},
+						{
+							"key": "outFields",
+							"value": "id_trafico%2Cgeom%2Cvia%2Cclase%2Cprovincia%2Cpkinicio_t%2Cpkfin_t%2Clongitud%2Cvhkmtot%2Cvhkmlig%2Cvhkmpes%2Cimdtot%2Cimdlig%2Cimdpes%2Cesri_oid"
+						},
+						{
+							"key": "outSR",
+							"value": "102100"
+						},
+						{
+							"key": "quantizationParameters",
+							"value": "%7B%22mode%22%3A%22view%22%2C%22originPosition%22%3A%22upperLeft%22%2C%22tolerance%22%3A4891%2C%22extent%22%3A%7B%22type%22%3A%22extent%22%2C%22xmin%22%3A23817.173499999568%2C%22ymin%22%3A3902546.972100001%2C%22xmax%22%3A1007490.1045000004%2C%22ymax%22%3A4847205.210200001%2C%22spatialReference%22%3A%7B%22wkid%22%3A25830%2C%22latestWkid%22%3A25830%7D%7D%7D"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2015",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://mapas.fomento.gob.es/arcgis/rest/services/MapaTrafico/Mapa2015web/MapServer/2/query?f=json&returnGeometry=true&spatialRel=esriSpatialRelIntersects&maxAllowableOffset=4891&geometry=%7B%22xmin%22%3A-581621.2057757154%2C%22ymin%22%3A4727073.212175617%2C%22xmax%22%3A-522917.56806087214%2C%22ymax%22%3A4785776.849890461%2C%22spatialReference%22%3A%7B%22wkid%22%3A102100%7D%7D&geometryType=esriGeometryEnvelope&inSR=102100&outFields=OBJECTID%2Cprovincia%2Cnombre%2Ctipo_carretera%2Cpk_inicio%2Cpk_fin%2Clongitud%2Cvh_km_total%2Cvh_km_ligeros%2Cvh_km_pesados%2Cimd_total%2Cimd_ligeros%2Cimd_pesados&outSR=102100&quantizationParameters=%7B%22mode%22%3A%22view%22%2C%22originPosition%22%3A%22upperLeft%22%2C%22tolerance%22%3A4891%2C%22extent%22%3A%7B%22type%22%3A%22extent%22%2C%22xmin%22%3A23816.994099999778%2C%22ymin%22%3A3902418.0131%2C%22xmax%22%3A1007380.8782000002%2C%22ymax%22%3A4847940.832699999%2C%22spatialReference%22%3A%7B%22wkid%22%3A25830%2C%22latestWkid%22%3A25830%7D%7D%7D",
+					"protocol": "https",
+					"host": [
+						"mapas",
+						"fomento",
+						"gob",
+						"es"
+					],
+					"path": [
+						"arcgis",
+						"rest",
+						"services",
+						"MapaTrafico",
+						"Mapa2015web",
+						"MapServer",
+						"2",
+						"query"
+					],
+					"query": [
+						{
+							"key": "f",
+							"value": "json"
+						},
+						{
+							"key": "returnGeometry",
+							"value": "true"
+						},
+						{
+							"key": "spatialRel",
+							"value": "esriSpatialRelIntersects"
+						},
+						{
+							"key": "maxAllowableOffset",
+							"value": "4891"
+						},
+						{
+							"key": "geometry",
+							"value": "%7B%22xmin%22%3A-581621.2057757154%2C%22ymin%22%3A4727073.212175617%2C%22xmax%22%3A-522917.56806087214%2C%22ymax%22%3A4785776.849890461%2C%22spatialReference%22%3A%7B%22wkid%22%3A102100%7D%7D"
+						},
+						{
+							"key": "geometryType",
+							"value": "esriGeometryEnvelope"
+						},
+						{
+							"key": "inSR",
+							"value": "102100"
+						},
+						{
+							"key": "outFields",
+							"value": "OBJECTID%2Cprovincia%2Cnombre%2Ctipo_carretera%2Cpk_inicio%2Cpk_fin%2Clongitud%2Cvh_km_total%2Cvh_km_ligeros%2Cvh_km_pesados%2Cimd_total%2Cimd_ligeros%2Cimd_pesados"
+						},
+						{
+							"key": "outSR",
+							"value": "102100"
+						},
+						{
+							"key": "quantizationParameters",
+							"value": "%7B%22mode%22%3A%22view%22%2C%22originPosition%22%3A%22upperLeft%22%2C%22tolerance%22%3A4891%2C%22extent%22%3A%7B%22type%22%3A%22extent%22%2C%22xmin%22%3A23816.994099999778%2C%22ymin%22%3A3902418.0131%2C%22xmax%22%3A1007380.8782000002%2C%22ymax%22%3A4847940.832699999%2C%22spatialReference%22%3A%7B%22wkid%22%3A25830%2C%22latestWkid%22%3A25830%7D%7D%7D"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

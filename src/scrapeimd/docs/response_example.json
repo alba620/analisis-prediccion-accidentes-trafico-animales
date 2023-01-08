@@ -1,0 +1,494 @@
+{
+    "displayFieldName": "provincia",
+    "transform": {
+        "originPosition": "upperLeft",
+        "scale": [
+            4891,
+            4891
+        ],
+        "translate": [
+            23816.994099999778,
+            4847940.8326999992
+        ]
+    },
+    "fieldAliases": {
+        "OBJECTID": "OBJECTID",
+        "provincia": "Provincia",
+        "nombre": "Nombre",
+        "tipo_carretera": "Tipo de carretera",
+        "pk_inicio": "PK inicio",
+        "pk_fin": "PK fin",
+        "longitud": "Longitud",
+        "vh_km_total": "vh-km total",
+        "vh_km_ligeros": "vh-km ligeros",
+        "vh_km_pesados": "vh-km pesados",
+        "imd_total": "IMD total",
+        "imd_ligeros": "IMD ligeros",
+        "imd_pesados": "IMD pesados"
+    },
+    "fields": [
+        {
+            "name": "OBJECTID",
+            "type": "esriFieldTypeOID",
+            "alias": "OBJECTID"
+        },
+        {
+            "name": "provincia",
+            "type": "esriFieldTypeString",
+            "alias": "Provincia",
+            "length": 50
+        },
+        {
+            "name": "nombre",
+            "type": "esriFieldTypeString",
+            "alias": "Nombre",
+            "length": 254
+        },
+        {
+            "name": "tipo_carretera",
+            "type": "esriFieldTypeString",
+            "alias": "Tipo de carretera",
+            "length": 254
+        },
+        {
+            "name": "pk_inicio",
+            "type": "esriFieldTypeString",
+            "alias": "PK inicio",
+            "length": 254
+        },
+        {
+            "name": "pk_fin",
+            "type": "esriFieldTypeString",
+            "alias": "PK fin",
+            "length": 254
+        },
+        {
+            "name": "longitud",
+            "type": "esriFieldTypeDouble",
+            "alias": "Longitud"
+        },
+        {
+            "name": "vh_km_total",
+            "type": "esriFieldTypeDouble",
+            "alias": "vh-km total"
+        },
+        {
+            "name": "vh_km_ligeros",
+            "type": "esriFieldTypeDouble",
+            "alias": "vh-km ligeros"
+        },
+        {
+            "name": "vh_km_pesados",
+            "type": "esriFieldTypeDouble",
+            "alias": "vh-km pesados"
+        },
+        {
+            "name": "imd_total",
+            "type": "esriFieldTypeDouble",
+            "alias": "IMD total"
+        },
+        {
+            "name": "imd_ligeros",
+            "type": "esriFieldTypeDouble",
+            "alias": "IMD ligeros"
+        },
+        {
+            "name": "imd_pesados",
+            "type": "esriFieldTypeDouble",
+            "alias": "IMD pesados"
+        }
+    ],
+    "features": [
+        {
+            "attributes": {
+                "OBJECTID": 3249,
+                "provincia": "BADAJOZ",
+                "nombre": "N-430",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "154+330",
+                "pk_fin": "167+170",
+                "longitud": 12.76,
+                "vh_km_total": 12947572.0,
+                "vh_km_ligeros": 7861692.0,
+                "vh_km_pesados": 5039306.0,
+                "imd_total": 2780.0,
+                "imd_ligeros": 1688.0,
+                "imd_pesados": 1082.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 2940,
+                "provincia": "CACERES",
+                "nombre": "N-502",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "189+960",
+                "pk_fin": "198+830",
+                "longitud": 8.77,
+                "vh_km_total": 1840603.0,
+                "vh_km_ligeros": 1741371.0,
+                "vh_km_pesados": 92830.0,
+                "imd_total": 575.0,
+                "imd_ligeros": 544.0,
+                "imd_pesados": 29.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3255,
+                "provincia": "BADAJOZ",
+                "nombre": "N-430A",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "182+140",
+                "pk_fin": "191+2980",
+                "longitud": 11.87,
+                "vh_km_total": 164636.0,
+                "vh_km_ligeros": 121311.0,
+                "vh_km_pesados": 43325.0,
+                "imd_total": 38.0,
+                "imd_ligeros": 28.0,
+                "imd_pesados": 10.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3298,
+                "provincia": "BADAJOZ",
+                "nombre": "N-502",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "232+090",
+                "pk_fin": "232+950",
+                "longitud": 0.86,
+                "vh_km_total": 408383.0,
+                "vh_km_ligeros": 379506.0,
+                "vh_km_pesados": 25425.0,
+                "imd_total": 1301.0,
+                "imd_ligeros": 1209.0,
+                "imd_pesados": 81.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 2691,
+                "provincia": "CIUDAD REAL",
+                "nombre": "N-502",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "264+030",
+                "pk_fin": "279+570",
+                "longitud": 15.56,
+                "vh_km_total": 1499361.0,
+                "vh_km_ligeros": 1385774.0,
+                "vh_km_pesados": 102229.0,
+                "imd_total": 264.0,
+                "imd_ligeros": 244.0,
+                "imd_pesados": 18.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3352,
+                "provincia": "BADAJOZ",
+                "nombre": "N-502",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "243+130",
+                "pk_fin": "243+740",
+                "longitud": 0.61,
+                "vh_km_total": 292116.0,
+                "vh_km_ligeros": 269406.0,
+                "vh_km_pesados": 20929.0,
+                "imd_total": 1312.0,
+                "imd_ligeros": 1210.0,
+                "imd_pesados": 94.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3252,
+                "provincia": "BADAJOZ",
+                "nombre": "N-430",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "193+250",
+                "pk_fin": "202+500",
+                "longitud": 9.12,
+                "vh_km_total": 5688919.0,
+                "vh_km_ligeros": 4024520.0,
+                "vh_km_pesados": 1644427.0,
+                "imd_total": 1709.0,
+                "imd_ligeros": 1209.0,
+                "imd_pesados": 494.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 490,
+                "provincia": "TOLEDO",
+                "nombre": "N-502",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "182+790",
+                "pk_fin": "189+960",
+                "longitud": 7.09,
+                "vh_km_total": 4916915.0,
+                "vh_km_ligeros": 4608962.0,
+                "vh_km_pesados": 248433.0,
+                "imd_total": 1900.0,
+                "imd_ligeros": 1781.0,
+                "imd_pesados": 96.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3295,
+                "provincia": "BADAJOZ",
+                "nombre": "N-502",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "213+910",
+                "pk_fin": "215+540",
+                "longitud": 1.62,
+                "vh_km_total": 646290.0,
+                "vh_km_ligeros": 604900.0,
+                "vh_km_pesados": 39617.0,
+                "imd_total": 1093.0,
+                "imd_ligeros": 1023.0,
+                "imd_pesados": 67.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3353,
+                "provincia": "BADAJOZ",
+                "nombre": "N-502",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "262+620",
+                "pk_fin": "262+850",
+                "longitud": 0.23,
+                "vh_km_total": 22162.0,
+                "vh_km_ligeros": 20484.0,
+                "vh_km_pesados": 1511.0,
+                "imd_total": 264.0,
+                "imd_ligeros": 244.0,
+                "imd_pesados": 18.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3253,
+                "provincia": "BADAJOZ",
+                "nombre": "N-430",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "202+500",
+                "pk_fin": "203+450",
+                "longitud": 0.92,
+                "vh_km_total": 573882.0,
+                "vh_km_ligeros": 405983.0,
+                "vh_km_pesados": 165885.0,
+                "imd_total": 1709.0,
+                "imd_ligeros": 1209.0,
+                "imd_pesados": 494.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3296,
+                "provincia": "BADAJOZ",
+                "nombre": "N-502",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "215+540",
+                "pk_fin": "216+260",
+                "longitud": 0.71,
+                "vh_km_total": 283250.0,
+                "vh_km_ligeros": 265110.0,
+                "vh_km_pesados": 17363.0,
+                "imd_total": 1093.0,
+                "imd_ligeros": 1023.0,
+                "imd_pesados": 67.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 2941,
+                "provincia": "CACERES",
+                "nombre": "N-502",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "198+830",
+                "pk_fin": "204+030",
+                "longitud": 5.1,
+                "vh_km_total": 1070362.0,
+                "vh_km_ligeros": 1012657.0,
+                "vh_km_pesados": 53983.0,
+                "imd_total": 575.0,
+                "imd_ligeros": 544.0,
+                "imd_pesados": 29.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3250,
+                "provincia": "BADAJOZ",
+                "nombre": "N-430",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "167+170",
+                "pk_fin": "182+640",
+                "longitud": 13.94,
+                "vh_km_total": 7082635.0,
+                "vh_km_ligeros": 4742110.0,
+                "vh_km_pesados": 2304909.0,
+                "imd_total": 1392.0,
+                "imd_ligeros": 932.0,
+                "imd_pesados": 453.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3367,
+                "provincia": "BADAJOZ",
+                "nombre": "N-502",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "243+1110",
+                "pk_fin": "243+1940",
+                "longitud": 0.83,
+                "vh_km_total": 397470.0,
+                "vh_km_ligeros": 366570.0,
+                "vh_km_pesados": 28477.0,
+                "imd_total": 1312.0,
+                "imd_ligeros": 1210.0,
+                "imd_pesados": 94.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3251,
+                "provincia": "BADAJOZ",
+                "nombre": "N-430",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "182+640",
+                "pk_fin": "193+250",
+                "longitud": 9.5,
+                "vh_km_total": 7683980.0,
+                "vh_km_ligeros": 5430105.0,
+                "vh_km_pesados": 2226135.0,
+                "imd_total": 2216.0,
+                "imd_ligeros": 1566.0,
+                "imd_pesados": 642.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 2675,
+                "provincia": "CIUDAD REAL",
+                "nombre": "N-430",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "203+450",
+                "pk_fin": "229+400",
+                "longitud": 25.39,
+                "vh_km_total": 11111552.0,
+                "vh_km_ligeros": 6941245.0,
+                "vh_km_pesados": 4133238.0,
+                "imd_total": 1199.0,
+                "imd_ligeros": 749.0,
+                "imd_pesados": 446.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3354,
+                "provincia": "BADAJOZ",
+                "nombre": "N-502",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "262+850",
+                "pk_fin": "264+030",
+                "longitud": 1.19,
+                "vh_km_total": 114668.0,
+                "vh_km_ligeros": 105982.0,
+                "vh_km_pesados": 7818.0,
+                "imd_total": 264.0,
+                "imd_ligeros": 244.0,
+                "imd_pesados": 18.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3299,
+                "provincia": "BADAJOZ",
+                "nombre": "N-502",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "232+950",
+                "pk_fin": "243+130",
+                "longitud": 10.13,
+                "vh_km_total": 4851054.0,
+                "vh_km_ligeros": 4473915.0,
+                "vh_km_pesados": 347560.0,
+                "imd_total": 1312.0,
+                "imd_ligeros": 1210.0,
+                "imd_pesados": 94.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3297,
+                "provincia": "BADAJOZ",
+                "nombre": "N-502",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "216+260",
+                "pk_fin": "232+090",
+                "longitud": 15.73,
+                "vh_km_total": 7469626.0,
+                "vh_km_ligeros": 6941414.0,
+                "vh_km_pesados": 465057.0,
+                "imd_total": 1301.0,
+                "imd_ligeros": 1209.0,
+                "imd_pesados": 81.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 4554,
+                "provincia": "BADAJOZ",
+                "nombre": "N-430A",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "167+000",
+                "pk_fin": "168+250",
+                "longitud": 0.85,
+                "vh_km_total": 11789.0,
+                "vh_km_ligeros": 8687.0,
+                "vh_km_pesados": 3102.0,
+                "imd_total": 38.0,
+                "imd_ligeros": 28.0,
+                "imd_pesados": 10.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3366,
+                "provincia": "BADAJOZ",
+                "nombre": "N-502",
+                "tipo_carretera": "Multicarril",
+                "pk_inicio": "243+740",
+                "pk_fin": "243+1110",
+                "longitud": 0.37,
+                "vh_km_total": 177185.0,
+                "vh_km_ligeros": 163411.0,
+                "vh_km_pesados": 12694.0,
+                "imd_total": 1312.0,
+                "imd_ligeros": 1210.0,
+                "imd_pesados": 94.0
+            }
+        },
+        {
+            "attributes": {
+                "OBJECTID": 3294,
+                "provincia": "BADAJOZ",
+                "nombre": "N-502",
+                "tipo_carretera": "Carretera convencional",
+                "pk_inicio": "204+030",
+                "pk_fin": "213+910",
+                "longitud": 9.83,
+                "vh_km_total": 3921629.0,
+                "vh_km_ligeros": 3670474.0,
+                "vh_km_pesados": 240392.0,
+                "imd_total": 1093.0,
+                "imd_ligeros": 1023.0,
+                "imd_pesados": 67.0
+            }
+        }
+    ]
+}
